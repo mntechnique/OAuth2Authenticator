@@ -19,15 +19,12 @@ import android.widget.Toast;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.github.scribejava.core.builder.ServiceBuilder;
 import com.github.scribejava.core.model.OAuth2AccessToken;
-import com.github.scribejava.core.oauth.OAuth20Service;
 import com.mntechnique.oauth2authenticator.R;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
-import static com.mntechnique.oauth2authenticator.auth.AccountGeneral.ACCOUNT_NAME;
 import static com.mntechnique.oauth2authenticator.auth.AccountGeneral.sServerAuthenticate;
 
 /**
@@ -65,7 +62,6 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
         setContentView(R.layout.activity_authenticator);
         mAccountManager = AccountManager.get(getBaseContext());
 
-        String accountName = getIntent().getStringExtra(ARG_ACCOUNT_NAME);
         mAuthTokenType = getIntent().getStringExtra(ARG_AUTH_TYPE);
         if (mAuthTokenType == null)
             mAuthTokenType = AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS;
@@ -159,6 +155,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                                 Toast.makeText(getBaseContext(), intent.getStringExtra(KEY_ERROR_MESSAGE), Toast.LENGTH_SHORT).show();
                             } else {
                                 finishLogin(intent);
+                                finish();
                             }
                         }
                     }.execute();
@@ -168,6 +165,16 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                     Log.i("", "ACCESS_DENIED_HERE");
                     resultIntent.putExtra("code", authCode);
                     authComplete = true;
+                }
+            }
+
+            @Override
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl){
+                super.onReceivedError(view, errorCode, description, failingUrl);
+                if (errorCode != -10) {
+                    Toast.makeText(getApplicationContext(), "Something went wrong", Toast.LENGTH_LONG).show();
+                    Log.i("WEB_VIEW_TEST", "error code:" + errorCode);
+                    finish();
                 }
             }
         });

@@ -69,13 +69,13 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
         String CLIENT_ID = am.getUserData(account, "clientId");
         String REDIRECT_URI = am.getUserData(account, "redirectURI");
         String tokenExpiryTime = am.getUserData(account, "tokenExpiryTime");
-        JSONObject openIDProfile = sServerAuthenticate.getOpenIDProfile(accessToken,
-                AccountGeneral.SERVER_URL +
-                AccountGeneral.OPENID_PROFILE_ENDPOINT);
 
         Log.d("frappe", TAG + "> at isnull - " + accessToken);
+        Log.d("frappe", TAG + "> expiryTime - " + tokenExpiryTime);
+
         Long currentTime = System.currentTimeMillis()/1000;
         Long tokenExpiry = Long.parseLong(tokenExpiryTime);
+
         // Lets give another try to authenticate the user
         if (TextUtils.isEmpty(accessToken) || currentTime > tokenExpiry) {
             try {
@@ -96,6 +96,7 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
                 e.printStackTrace();
             }
         }
+
         // If we get an authToken - we return it
         if (!TextUtils.isEmpty(authToken)) {
             Bundle result = new Bundle();
