@@ -1,0 +1,12 @@
+<resources>
+    <string name="clientId">f9b89210ae</string>
+    <string name="app_name">OAuth2Authenticator</string>
+    <string name="authEndpoint">/api/method/frappe.integrations.oauth2.authorize</string>
+    <string name="tokenEndpoint">/api/method/frappe.integrations.oauth2.get_token</string>
+    <string name="openIDEndpoint">/api/method/frappe.integrations.oauth2.openid_profile</string>
+    <string name="redirectURI">oauth://oauth2authenticator</string>
+    <string name="serverURL">http://test.mntechnique.com</string>
+    <string name="oauth2Scope">openid all</string>
+    <string name="clientSecret">2fa756a823</string>
+    <string name="accountType">${packageName}</string>
+</resources>
