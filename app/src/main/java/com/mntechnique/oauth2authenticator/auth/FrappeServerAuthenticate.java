@@ -1,28 +1,29 @@
 package com.mntechnique.oauth2authenticator.auth;
 
+import android.content.res.Resources;
 import android.util.Log;
 
 import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.github.scribejava.core.model.OAuthRequest;
 import com.github.scribejava.core.model.Response;
 import com.github.scribejava.core.model.Verb;
+import com.mntechnique.oauth2authenticator.R;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.HashMap;
 
 /**
- * Handles the comminication with Parse.com
+ * Handles the comminication with OAuth 2 Provider
  *
  * User: revant
  * Date: 3/27/13
  * Time: 3:30 AM
  */
 public class FrappeServerAuthenticate implements ServerAuthenticate{
-    String authtoken;
+
     @Override
     public String userSignIn(final JSONObject authCode, final String CLIENT_ID, final String REDIRECT_URI) throws Exception {
         OAuth2AccessToken oAuth2AccessToken = null;
@@ -49,9 +50,9 @@ public class FrappeServerAuthenticate implements ServerAuthenticate{
     }
 
     @Override
-    public JSONObject getOpenIDProfile(String accessToken, String OPENID_PROFILE_URL){
+    public JSONObject getOpenIDProfile(String accessToken, String serverURL, String openIDEndpoint){
         OAuth2AccessToken oAuth2AccessToken = new OAuth2AccessToken(accessToken);
-        final OAuthRequest request = new OAuthRequest(Verb.GET, AccountGeneral.SERVER_URL + AccountGeneral.OPENID_PROFILE_ENDPOINT);
+        final OAuthRequest request = new OAuthRequest(Verb.GET, serverURL + openIDEndpoint);
         AccountGeneral.oauth20Service.signRequest(oAuth2AccessToken, request);
         Response response = null;
         try {
@@ -73,85 +74,5 @@ public class FrappeServerAuthenticate implements ServerAuthenticate{
             e.printStackTrace();
         }
         return openIDProfile;
-    }
-
-    private class ParseComError implements Serializable {
-        int code;
-        String error;
-    }
-    private class User implements Serializable {
-        private String firstName;
-        private String lastName;
-        private String username;
-        private String phone;
-        private String objectId;
-        public String sessionToken;
-        private String gravatarId;
-
-
-        private String avatarUrl;
-
-        public String getFirstName() {
-            return firstName;
-        }
-
-        public void setFirstName(String firstName) {
-            this.firstName = firstName;
-        }
-
-        public String getLastName() {
-            return lastName;
-        }
-
-        public void setLastName(String lastName) {
-            this.lastName = lastName;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        public String getPhone() {
-            return phone;
-        }
-
-        public void setPhone(String phone) {
-            this.phone = phone;
-        }
-
-        public String getObjectId() {
-            return objectId;
-        }
-
-        public void setObjectId(String objectId) {
-            this.objectId = objectId;
-        }
-
-        public String getSessionToken() {
-            return sessionToken;
-        }
-
-        public void setSessionToken(String sessionToken) {
-            this.sessionToken = sessionToken;
-        }
-
-        public String getGravatarId() {
-            return gravatarId;
-        }
-
-        public void setGravatarId(String gravatarId) {
-            this.gravatarId = gravatarId;
-        }
-
-        public String getAvatarUrl() {
-            return avatarUrl;
-        }
-        public void setAvatarUrl(String avatarUrl) {
-            this.avatarUrl = avatarUrl;
-        }
     }
 }

@@ -9,4 +9,6 @@
     <string name="oauth2Scope">openid all</string>
     <string name="clientSecret">2fa756a823</string>
     <string name="accountType">${packageName}</string>
+    <string name="package_name">${packageName}</string>
+    <string name="expiresIn">3300</string>
 </resources>

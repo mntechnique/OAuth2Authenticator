@@ -1,9 +1,12 @@
 package com.mntechnique.oauth2authenticator.auth;
 
+import android.content.res.Resources;
+
 import com.github.scribejava.apis.google.GoogleJsonTokenExtractor;
 import com.github.scribejava.core.builder.api.DefaultApi20;
 import com.github.scribejava.core.extractors.TokenExtractor;
 import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.mntechnique.oauth2authenticator.R;
 
 /**
  * Created by revant on 15/7/17.
@@ -15,14 +18,14 @@ public class OAuth2API extends DefaultApi20 {
     private final String accessTokenEndpoint;
     private final String authorizationBaseUrl;
 
-    protected OAuth2API(String serverURL) {
+    protected OAuth2API(String serverURL, String authEndpoint, String tokenEndpoint) {
         this.serverURL = serverURL;
-        this.accessTokenEndpoint = serverURL + AccountGeneral.TOKEN_ENDPOINT;
-        this.authorizationBaseUrl = serverURL + AccountGeneral.AUTH_ENDPOINT;
+        this.authorizationBaseUrl = serverURL + authEndpoint;
+        this.accessTokenEndpoint = serverURL + tokenEndpoint;
     }
 
-    public static OAuth2API instance(String serverUrl) {
-        return new OAuth2API(serverUrl);
+    public static OAuth2API instance(String serverUrl, String authEndpoint, String tokenEndpoint) {
+        return new OAuth2API(serverUrl, authEndpoint, tokenEndpoint);
     }
 
     public String getServerURL() {

@@ -3,11 +3,13 @@ package com.mntechnique.oauth2authenticator.auth;
 import android.accounts.*;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 
-import org.json.JSONException;
+import com.mntechnique.oauth2authenticator.R;
+
 import org.json.JSONObject;
 
 import static android.accounts.AccountManager.KEY_BOOLEAN_RESULT;
@@ -80,7 +82,7 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
         if (TextUtils.isEmpty(accessToken) || currentTime > tokenExpiry) {
             try {
                 Log.d("frappe", TAG + "> re-authenticating with the refresh token");
-                Long tsLong = (System.currentTimeMillis()/1000)+ AccountGeneral.expiresIn;
+                Long tsLong = (System.currentTimeMillis()/1000)+ Long.parseLong(Resources.getSystem().getString(R.string.expiresIn));
                 String refreshedTokenExpiryTime = tsLong.toString();
                 JSONObject authMethod = new JSONObject();
                 authMethod.put("type", "refresh");

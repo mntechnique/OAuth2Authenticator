@@ -4,6 +4,7 @@ import android.accounts.Account;
 import android.accounts.AccountAuthenticatorActivity;
 import android.accounts.AccountManager;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -20,6 +21,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.mntechnique.oauth2authenticator.BuildConfig;
 import com.mntechnique.oauth2authenticator.R;
 
 import java.io.IOException;
@@ -88,8 +90,17 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
         webView.clearCache(true);
         CookieManager.getInstance().removeAllCookie();
         CookieSyncManager.getInstance().sync();
-        Log.d("oauth2serv", AccountGeneral.oauth20Service.getAuthorizationUrl());
-        webView.loadUrl(AccountGeneral.oauth20Service.getAuthorizationUrl());
+        final AccountGeneral accountGeneral = new AccountGeneral(
+                getResources().getString(R.string.oauth2Scope),
+                getResources().getString(R.string.clientId),
+                getResources().getString(R.string.clientSecret),
+                getResources().getString(R.string.serverURL),
+                getResources().getString(R.string.redirectURI),
+                getResources().getString(R.string.authEndpoint),
+                getResources().getString(R.string.tokenEndpoint)
+        );
+        Log.d("oauth2serv", accountGeneral.oauth20Service.getAuthorizationUrl());
+        webView.loadUrl(accountGeneral.oauth20Service.getAuthorizationUrl());
         webView.setWebViewClient(new WebViewClient() {
 
             boolean authComplete = false;
@@ -98,7 +109,6 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon){
                 super.onPageStarted(view, url, favicon);
-
             }
             @Override
             public void onPageFinished(WebView view, String url) {
@@ -119,7 +129,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                             OAuth2AccessToken accessToken = null;
 
                             try {
-                                accessToken = AccountGeneral.oauth20Service.getAccessToken(authCode);
+                                accessToken = accountGeneral.oauth20Service.getAccessToken(authCode);
                             } catch (IOException e) {
                                 Toast.makeText(getBaseContext(), "IOException", Toast.LENGTH_LONG).show();
                                 e.printStackTrace();
@@ -135,11 +145,13 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                             authtoken = accessToken.getRawResponse();
                             try {
                                 JSONObject bearerToken = new JSONObject(accessToken.getRawResponse());
-                                JSONObject openIDProfile = sServerAuthenticate.getOpenIDProfile(bearerToken.getString("access_token") ,AccountGeneral.OPENID_PROFILE_ENDPOINT);
+                                JSONObject openIDProfile = sServerAuthenticate.getOpenIDProfile(bearerToken.getString("access_token"),
+                                        getResources().getString(R.string.serverURL),
+                                        getResources().getString(R.string.openIDEndpoint));
                                 data.putString(AccountManager.KEY_ACCOUNT_NAME, openIDProfile.get("email").toString());
                                 data.putString(AccountManager.KEY_ACCOUNT_TYPE, accountType);
                                 data.putString(AccountManager.KEY_AUTHTOKEN, authtoken);
-                                data.putString(PARAM_USER_PASS, AccountGeneral.CLIENT_SECRET);
+                                data.putString(PARAM_USER_PASS, getResources().getString(R.string.clientSecret));
                             } catch (Exception e) {
                                 data.putString(KEY_ERROR_MESSAGE, e.getMessage());
                             }
@@ -181,7 +193,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
     }
 
     private void finishLogin(Intent intent) {
-        Log.d(AccountGeneral.ACCOUNT_NAME, TAG + "> finishLogin");
+        Log.d(getResources().getString(R.string.app_name), TAG + "> finishLogin");
 
         String accountName = intent.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
         String accountPassword = intent.getStringExtra(PARAM_USER_PASS);
@@ -208,12 +220,12 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
             JSONObject bearerToken;
             try {
                 bearerToken = new JSONObject(authtoken);
-                Long tokenExpiryTime= (System.currentTimeMillis()/1000) + AccountGeneral.expiresIn;
+                Long tokenExpiryTime= (System.currentTimeMillis()/1000) + Long.parseLong(getResources().getString(R.string.expiresIn));
                 mAccountManager.setUserData(account, "refreshToken", bearerToken.getString("refresh_token"));
                 mAccountManager.setUserData(account, "accessToken", bearerToken.getString("access_token"));
-                mAccountManager.setUserData(account, "redirectURI", AccountGeneral.REDIRECT_URI);
-                mAccountManager.setUserData(account, "frappeServer", AccountGeneral.SERVER_URL);
-                mAccountManager.setUserData(account, "clientId", AccountGeneral.CLIENT_ID);
+                mAccountManager.setUserData(account, "redirectURI", getResources().getString(R.string.redirectURI));
+                mAccountManager.setUserData(account, "frappeServer", getResources().getString(R.string.serverURL));
+                mAccountManager.setUserData(account, "clientId", getResources().getString(R.string.clientId));
                 mAccountManager.setUserData(account, "tokenExpiryTime", tokenExpiryTime.toString());
             } catch (JSONException e) {
                 e.printStackTrace();
