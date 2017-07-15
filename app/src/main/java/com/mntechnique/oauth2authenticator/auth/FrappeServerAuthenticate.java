@@ -24,7 +24,7 @@ import java.util.HashMap;
 public class FrappeServerAuthenticate implements ServerAuthenticate{
     String authtoken;
     @Override
-    public String userSignIn(String TOKEN_URL, final JSONObject authCode, final String CLIENT_ID, final String REDIRECT_URI) throws Exception {
+    public String userSignIn(final JSONObject authCode, final String CLIENT_ID, final String REDIRECT_URI) throws Exception {
         OAuth2AccessToken oAuth2AccessToken = null;
         HashMap<String,String> params=new HashMap<>();
         params.put("client_id", CLIENT_ID);

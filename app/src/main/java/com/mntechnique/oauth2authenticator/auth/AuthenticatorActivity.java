@@ -108,6 +108,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 if (url.contains("?code=") && authComplete != true) {
+                    webView.setVisibility(View.GONE);
                     Uri uri = Uri.parse(url);
                     authCode = uri.getQueryParameter("code");
                     Log.i("", "CODE : " + authCode);
@@ -157,13 +158,12 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                             if (intent.hasExtra(KEY_ERROR_MESSAGE)) {
                                 Toast.makeText(getBaseContext(), intent.getStringExtra(KEY_ERROR_MESSAGE), Toast.LENGTH_SHORT).show();
                             } else {
-                                webView.setVisibility(View.GONE);
                                 finishLogin(intent);
                             }
                         }
                     }.execute();
                 }else if(url.contains("redirect_uri=oauth%3A%2F%2Ffoauth2authenticator") && authComplete != true) {
-                    Toast.makeText(getBaseContext(), "Allow or Deny Access to Resources", Toast.LENGTH_LONG).show();
+                    Toast.makeText(getApplicationContext(), "Allow or Deny Access to Resources", Toast.LENGTH_LONG).show();
                 }else if(url.contains("error=access_denied")){
                     Log.i("", "ACCESS_DENIED_HERE");
                     resultIntent.putExtra("code", authCode);
@@ -201,11 +201,13 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
             JSONObject bearerToken;
             try {
                 bearerToken = new JSONObject(authtoken);
+                Long tokenExpiryTime= (System.currentTimeMillis()/1000) + AccountGeneral.expiresIn;
                 mAccountManager.setUserData(account, "refreshToken", bearerToken.getString("refresh_token"));
                 mAccountManager.setUserData(account, "accessToken", bearerToken.getString("access_token"));
                 mAccountManager.setUserData(account, "redirectURI", AccountGeneral.REDIRECT_URI);
                 mAccountManager.setUserData(account, "frappeServer", AccountGeneral.SERVER_URL);
                 mAccountManager.setUserData(account, "clientId", AccountGeneral.CLIENT_ID);
+                mAccountManager.setUserData(account, "tokenExpiryTime", tokenExpiryTime.toString());
             } catch (JSONException e) {
                 e.printStackTrace();
             }

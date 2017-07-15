@@ -68,28 +68,30 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
         String frappeServer = am.getUserData(account, "frappeServer");
         String CLIENT_ID = am.getUserData(account, "clientId");
         String REDIRECT_URI = am.getUserData(account, "redirectURI");
+        String tokenExpiryTime = am.getUserData(account, "tokenExpiryTime");
         JSONObject openIDProfile = sServerAuthenticate.getOpenIDProfile(accessToken,
                 AccountGeneral.SERVER_URL +
                 AccountGeneral.OPENID_PROFILE_ENDPOINT);
 
-        //Log.d("frappe", TAG + "> authToken returned - " + authToken);
-        Log.d("frappe", TAG + "> openid isnull - " + openIDProfile.isNull("email"));
         Log.d("frappe", TAG + "> at isnull - " + accessToken);
-
+        Long currentTime = System.currentTimeMillis()/1000;
+        Long tokenExpiry = Long.parseLong(tokenExpiryTime);
         // Lets give another try to authenticate the user
-        if (TextUtils.isEmpty(accessToken) || openIDProfile.isNull("email")) {
+        if (TextUtils.isEmpty(accessToken) || currentTime > tokenExpiry) {
             try {
                 Log.d("frappe", TAG + "> re-authenticating with the refresh token");
-                String TOKEN_URL = frappeServer + TOKEN_ENDPOINT;
+                Long tsLong = (System.currentTimeMillis()/1000)+ AccountGeneral.expiresIn;
+                String refreshedTokenExpiryTime = tsLong.toString();
                 JSONObject authMethod = new JSONObject();
                 authMethod.put("type", "refresh");
                 authMethod.put("refresh_token", refreshToken);
-                authToken = sServerAuthenticate.userSignIn(TOKEN_URL,authMethod,CLIENT_ID,REDIRECT_URI);
+                authToken = sServerAuthenticate.userSignIn(authMethod,CLIENT_ID,REDIRECT_URI);
                 JSONObject bearerToken = new JSONObject(authToken);
                 am.setAuthToken(account, AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS, authToken);
                 am.setUserData(account, "authtoken", authToken);
                 am.setUserData(account, "refreshToken", bearerToken.getString("refresh_token"));
                 am.setUserData(account, "accessToken", bearerToken.getString("access_token"));
+                am.setUserData(account, "tokenExpiryTime", refreshedTokenExpiryTime);
             } catch (Exception e) {
                 e.printStackTrace();
             }
