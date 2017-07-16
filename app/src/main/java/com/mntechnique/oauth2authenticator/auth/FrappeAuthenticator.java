@@ -68,10 +68,15 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
         String authToken = am.getUserData(account, "authtoken");
         String accessToken = am.getUserData(account, "accessToken");
         String refreshToken = am.getUserData(account, "refreshToken");
+
         String serverURL = am.getUserData(account, "serverURL");
         String CLIENT_ID = am.getUserData(account, "clientId");
         String REDIRECT_URI = am.getUserData(account, "redirectURI");
+        String authEndpoint = am.getUserData(account, "authEndpoint");
+        String tokenEndpoint = am.getUserData(account, "tokenEndpoint");
         String openIDEndpoint = am.getUserData(account, "openIDEndpoint");
+        String clientSecret = am.getUserData(account, "clientSecret");
+        String oauth2Scope = am.getUserData(account, "oauth2Scope");
         String tokenExpiryTime = am.getUserData(account, "tokenExpiryTime");
 
         Log.d("frappe", TAG + "> at isnull - " + accessToken);
@@ -109,6 +114,10 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
             try {
                 bearerToken = new JSONObject(authToken);
                 access_token = bearerToken.getString("access_token");
+                AccountGeneral accountGeneral = new AccountGeneral(
+                        oauth2Scope, CLIENT_ID, clientSecret, serverURL,
+                        REDIRECT_URI, authEndpoint, tokenEndpoint
+                );
                 openIDProfile = sServerAuthenticate.getOpenIDProfile(access_token, serverURL, openIDEndpoint);
             } catch (JSONException e) {
                 e.printStackTrace();

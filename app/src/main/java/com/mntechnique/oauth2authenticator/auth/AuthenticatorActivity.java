@@ -235,11 +235,17 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
             try {
                 bearerToken = new JSONObject(authtoken);
                 Long tokenExpiryTime= (System.currentTimeMillis()/1000) + Long.parseLong(getResources().getString(R.string.expiresIn));
+                mAccountManager.setUserData(account, "authToken", authtoken);
                 mAccountManager.setUserData(account, "refreshToken", bearerToken.getString("refresh_token"));
                 mAccountManager.setUserData(account, "accessToken", bearerToken.getString("access_token"));
-                mAccountManager.setUserData(account, "redirectURI", getResources().getString(R.string.redirectURI));
                 mAccountManager.setUserData(account, "serverURL", getResources().getString(R.string.serverURL));
+                mAccountManager.setUserData(account, "redirectURI", getResources().getString(R.string.redirectURI));
                 mAccountManager.setUserData(account, "clientId", getResources().getString(R.string.clientId));
+                mAccountManager.setUserData(account, "clientSecret", getResources().getString(R.string.clientSecret));
+                mAccountManager.setUserData(account, "oauth2Scope", getResources().getString(R.string.oauth2Scope));
+                mAccountManager.setUserData(account, "authEndpoint", getResources().getString(R.string.authEndpoint));
+                mAccountManager.setUserData(account, "tokenEndpoint", getResources().getString(R.string.tokenEndpoint));
+                mAccountManager.setUserData(account, "openIDEndpoint", getResources().getString(R.string.openIDEndpoint));
                 mAccountManager.setUserData(account, "tokenExpiryTime", tokenExpiryTime.toString());
             } catch (JSONException e) {
                 e.printStackTrace();

@@ -1,13 +1,11 @@
 package com.mntechnique.oauth2authenticator.auth;
 
-import android.content.res.Resources;
 import android.util.Log;
 
 import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.github.scribejava.core.model.OAuthRequest;
 import com.github.scribejava.core.model.Response;
 import com.github.scribejava.core.model.Verb;
-import com.mntechnique.oauth2authenticator.R;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -22,7 +20,7 @@ import java.util.HashMap;
  * Date: 3/27/13
  * Time: 3:30 AM
  */
-public class FrappeServerAuthenticate implements ServerAuthenticate{
+public class FrappeServerAuthenticate implements ServerAuthenticate {
 
     @Override
     public String userSignIn(final JSONObject authCode, final String CLIENT_ID, final String REDIRECT_URI) throws Exception {
