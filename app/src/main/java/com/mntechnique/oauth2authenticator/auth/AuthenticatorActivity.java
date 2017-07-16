@@ -20,6 +20,7 @@ import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import org.json.JSONException;
@@ -93,13 +94,13 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
     public void initOAuth2() {
         final String accountType = getIntent().getStringExtra(ARG_ACCOUNT_TYPE);
         final WebView webView = (WebView) findViewById(R.id.webv);
+        final ProgressBar progressBar = (ProgressBar) findViewById(R.id.progressBar);
         try {
             urlEncodedRedirectURI = URLEncoder.encode(getResources().getString(R.string.redirectURI), "UTF-8");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
         webView.getSettings().setJavaScriptEnabled(true);
-        webView.setVisibility(View.VISIBLE);
         webView.clearCache(true);
         CookieManager.getInstance().removeAllCookie();
         CookieSyncManager.getInstance().sync();
@@ -123,12 +124,16 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                 @Override
                 public void onPageStarted(WebView view, String url, Bitmap favicon){
                     super.onPageStarted(view, url, favicon);
+
                 }
                 @Override
                 public void onPageFinished(WebView view, String url) {
                     super.onPageFinished(view, url);
+                    progressBar.setVisibility(View.GONE);
+                    webView.setVisibility(View.VISIBLE);
                     if (url.contains("?code=") && authComplete != true) {
                         webView.setVisibility(View.GONE);
+                        progressBar.setVisibility(View.VISIBLE);
                         Uri uri = Uri.parse(url);
                         authCode = uri.getQueryParameter("code");
                         Log.i("", "CODE : " + authCode);
@@ -185,9 +190,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                                 }
                             }
                         }.execute();
-                    }else if(url.contains("redirect_uri=" + urlEncodedRedirectURI) && authComplete != true) {
-                        Toast.makeText(getApplicationContext(), "Allow or Deny Access to Resources", Toast.LENGTH_LONG).show();
-                    }else if(url.contains("error=access_denied")){
+                    } else if (url.contains("error=access_denied")){
                         Log.i("", "ACCESS_DENIED_HERE");
                         resultIntent.putExtra("code", authCode);
                         authComplete = true;
