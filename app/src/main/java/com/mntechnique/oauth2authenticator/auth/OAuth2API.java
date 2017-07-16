@@ -6,7 +6,6 @@ import com.github.scribejava.apis.google.GoogleJsonTokenExtractor;
 import com.github.scribejava.core.builder.api.DefaultApi20;
 import com.github.scribejava.core.extractors.TokenExtractor;
 import com.github.scribejava.core.model.OAuth2AccessToken;
-import com.mntechnique.oauth2authenticator.R;
 
 /**
  * Created by revant on 15/7/17.
