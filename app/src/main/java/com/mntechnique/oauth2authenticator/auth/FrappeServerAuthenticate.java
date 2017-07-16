@@ -68,8 +68,10 @@ public class FrappeServerAuthenticate implements ServerAuthenticate {
             openIDProfile = new JSONObject(response.getBody());
         } catch (JSONException e) {
             e.printStackTrace();
+            openIDProfile = new JSONObject();
         } catch (IOException e) {
             e.printStackTrace();
+            openIDProfile = new JSONObject();
         }
         return openIDProfile;
     }

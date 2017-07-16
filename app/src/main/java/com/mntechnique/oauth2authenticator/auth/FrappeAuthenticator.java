@@ -119,14 +119,14 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
                         REDIRECT_URI, authEndpoint, tokenEndpoint
                 );
                 openIDProfile = sServerAuthenticate.getOpenIDProfile(access_token, serverURL, openIDEndpoint);
+                if (!openIDProfile.getString("email").isEmpty()){
+                    Bundle result = new Bundle();
+                    result = getBundle("valid",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
+                    result.putString(AccountManager.KEY_AUTHTOKEN, authToken);
+                    return result;
+                }
             } catch (JSONException e) {
                 e.printStackTrace();
-            }
-            if (!openIDProfile.isNull("email")){
-                Bundle result = new Bundle();
-                result = getBundle("valid",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
-                result.putString(AccountManager.KEY_AUTHTOKEN, authToken);
-                return result;
             }
         }
         // If we get here, then we couldn't access the user's password - so we
