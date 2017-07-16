@@ -3,16 +3,21 @@ package com.mntechnique.oauth2authenticator.auth;
 import android.accounts.Account;
 import android.accounts.AccountAuthenticatorActivity;
 import android.accounts.AccountManager;
+import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.util.Log;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
+import android.webkit.WebResourceError;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
@@ -21,7 +26,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.github.scribejava.core.model.OAuth2AccessToken;
-import com.mntechnique.oauth2authenticator.BuildConfig;
 import com.mntechnique.oauth2authenticator.R;
 
 import java.io.IOException;
@@ -108,97 +112,98 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                 getResources().getString(R.string.authEndpoint),
                 getResources().getString(R.string.tokenEndpoint)
         );
-        Log.d("oauth2serv", accountGeneral.oauth20Service.getAuthorizationUrl());
-        webView.loadUrl(accountGeneral.oauth20Service.getAuthorizationUrl());
-        webView.setWebViewClient(new WebViewClient() {
+        Log.d("authURL", accountGeneral.oauth20Service.getAuthorizationUrl());
+        if (isConnected(getApplicationContext())) {
+            webView.loadUrl(accountGeneral.oauth20Service.getAuthorizationUrl());
+            webView.setWebViewClient(new WebViewClient() {
 
-            boolean authComplete = false;
-            Intent resultIntent = new Intent();
+                boolean authComplete = false;
+                Intent resultIntent = new Intent();
 
-            @Override
-            public void onPageStarted(WebView view, String url, Bitmap favicon){
-                super.onPageStarted(view, url, favicon);
-            }
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                if (url.contains("?code=") && authComplete != true) {
-                    webView.setVisibility(View.GONE);
-                    Uri uri = Uri.parse(url);
-                    authCode = uri.getQueryParameter("code");
-                    Log.i("", "CODE : " + authCode);
-                    new AsyncTask<String, Void, Intent>() {
-
-                        @Override
-                        protected Intent doInBackground(String... params) {
-                            Log.d("frappe", TAG + "> Started authenticating");
-
-                            String authtoken = null;
-                            Bundle data = new Bundle();
-                            OAuth2AccessToken accessToken = null;
-
-                            try {
-                                accessToken = accountGeneral.oauth20Service.getAccessToken(authCode);
-                            } catch (IOException e) {
-                                Toast.makeText(getBaseContext(), "IOException", Toast.LENGTH_LONG).show();
-                                e.printStackTrace();
-                            } catch (InterruptedException e) {
-                                Toast.makeText(getBaseContext(), "InterruptedException", Toast.LENGTH_LONG).show();
-                                e.printStackTrace();
-                            } catch (ExecutionException e) {
-                                Toast.makeText(getBaseContext(), "ExecutionException", Toast.LENGTH_LONG).show();
-                                e.printStackTrace();
-                            }
-
-                            Log.d("AccessToken", accessToken.getRawResponse());
-                            authtoken = accessToken.getRawResponse();
-                            try {
-                                JSONObject bearerToken = new JSONObject(accessToken.getRawResponse());
-                                JSONObject openIDProfile = sServerAuthenticate.getOpenIDProfile(bearerToken.getString("access_token"),
-                                        getResources().getString(R.string.serverURL),
-                                        getResources().getString(R.string.openIDEndpoint));
-                                data.putString(AccountManager.KEY_ACCOUNT_NAME, openIDProfile.get("email").toString());
-                                data.putString(AccountManager.KEY_ACCOUNT_TYPE, accountType);
-                                data.putString(AccountManager.KEY_AUTHTOKEN, authtoken);
-                                data.putString(PARAM_USER_PASS, getResources().getString(R.string.clientSecret));
-                            } catch (Exception e) {
-                                data.putString(KEY_ERROR_MESSAGE, e.getMessage());
-                            }
-
-                            final Intent res = new Intent();
-                            res.putExtras(data);
-                            return res;
-                        }
-
-                        @Override
-                        protected void onPostExecute(Intent intent) {
-                            if (intent.hasExtra(KEY_ERROR_MESSAGE)) {
-                                Toast.makeText(getBaseContext(), intent.getStringExtra(KEY_ERROR_MESSAGE), Toast.LENGTH_SHORT).show();
-                            } else {
-                                finishLogin(intent);
-                                finish();
-                            }
-                        }
-                    }.execute();
-                }else if(url.contains("redirect_uri=" + urlEncodedRedirectURI) && authComplete != true) {
-                    Toast.makeText(getApplicationContext(), "Allow or Deny Access to Resources", Toast.LENGTH_LONG).show();
-                }else if(url.contains("error=access_denied")){
-                    Log.i("", "ACCESS_DENIED_HERE");
-                    resultIntent.putExtra("code", authCode);
-                    authComplete = true;
+                @Override
+                public void onPageStarted(WebView view, String url, Bitmap favicon){
+                    super.onPageStarted(view, url, favicon);
                 }
-            }
+                @Override
+                public void onPageFinished(WebView view, String url) {
+                    super.onPageFinished(view, url);
+                    if (url.contains("?code=") && authComplete != true) {
+                        webView.setVisibility(View.GONE);
+                        Uri uri = Uri.parse(url);
+                        authCode = uri.getQueryParameter("code");
+                        Log.i("", "CODE : " + authCode);
+                        new AsyncTask<String, Void, Intent>() {
 
-            @Override
-            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl){
-                super.onReceivedError(view, errorCode, description, failingUrl);
-                if (errorCode != -10 || errorCode != -6) {
-                    Toast.makeText(getApplicationContext(), "Something went wrong", Toast.LENGTH_LONG).show();
-                    Log.i("WEB_VIEW_TEST", "error code:" + errorCode);
-                    finish();
+                            @Override
+                            protected Intent doInBackground(String... params) {
+                                Log.d("frappe", TAG + "> Started authenticating");
+
+                                String authtoken = null;
+                                Bundle data = new Bundle();
+                                OAuth2AccessToken accessToken = null;
+
+                                try {
+                                    accessToken = accountGeneral.oauth20Service.getAccessToken(authCode);
+                                } catch (IOException e) {
+                                    Toast.makeText(getBaseContext(), "IOException", Toast.LENGTH_LONG).show();
+                                    e.printStackTrace();
+                                } catch (InterruptedException e) {
+                                    Toast.makeText(getBaseContext(), "InterruptedException", Toast.LENGTH_LONG).show();
+                                    e.printStackTrace();
+                                } catch (ExecutionException e) {
+                                    Toast.makeText(getBaseContext(), "ExecutionException", Toast.LENGTH_LONG).show();
+                                    e.printStackTrace();
+                                }
+
+                                Log.d("AccessToken", accessToken.getRawResponse());
+                                authtoken = accessToken.getRawResponse();
+                                try {
+                                    JSONObject bearerToken = new JSONObject(accessToken.getRawResponse());
+                                    JSONObject openIDProfile = sServerAuthenticate.getOpenIDProfile(bearerToken.getString("access_token"),
+                                            getResources().getString(R.string.serverURL),
+                                            getResources().getString(R.string.openIDEndpoint));
+                                    data.putString(AccountManager.KEY_ACCOUNT_NAME, openIDProfile.get("email").toString());
+                                    data.putString(AccountManager.KEY_ACCOUNT_TYPE, accountType);
+                                    data.putString(AccountManager.KEY_AUTHTOKEN, authtoken);
+                                    data.putString(PARAM_USER_PASS, getResources().getString(R.string.clientSecret));
+                                } catch (Exception e) {
+                                    data.putString(KEY_ERROR_MESSAGE, e.getMessage());
+                                }
+
+                                final Intent res = new Intent();
+                                res.putExtras(data);
+                                return res;
+                            }
+
+                            @Override
+                            protected void onPostExecute(Intent intent) {
+                                if (intent.hasExtra(KEY_ERROR_MESSAGE)) {
+                                    Toast.makeText(getBaseContext(), intent.getStringExtra(KEY_ERROR_MESSAGE), Toast.LENGTH_SHORT).show();
+                                } else {
+                                    finishLogin(intent);
+                                    finish();
+                                }
+                            }
+                        }.execute();
+                    }else if(url.contains("redirect_uri=" + urlEncodedRedirectURI) && authComplete != true) {
+                        Toast.makeText(getApplicationContext(), "Allow or Deny Access to Resources", Toast.LENGTH_LONG).show();
+                    }else if(url.contains("error=access_denied")){
+                        Log.i("", "ACCESS_DENIED_HERE");
+                        resultIntent.putExtra("code", authCode);
+                        authComplete = true;
+                    }
                 }
-            }
-        });
+            });
+        }
+        else {
+            Snackbar.make(findViewById(android.R.id.content), "Internet Connection Error", Snackbar.LENGTH_INDEFINITE)
+                    .setAction("Close", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            finish();
+                        }
+                    }).show();
+        }
     }
 
     private void finishLogin(Intent intent) {
@@ -233,7 +238,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                 mAccountManager.setUserData(account, "refreshToken", bearerToken.getString("refresh_token"));
                 mAccountManager.setUserData(account, "accessToken", bearerToken.getString("access_token"));
                 mAccountManager.setUserData(account, "redirectURI", getResources().getString(R.string.redirectURI));
-                mAccountManager.setUserData(account, "frappeServer", getResources().getString(R.string.serverURL));
+                mAccountManager.setUserData(account, "serverURL", getResources().getString(R.string.serverURL));
                 mAccountManager.setUserData(account, "clientId", getResources().getString(R.string.clientId));
                 mAccountManager.setUserData(account, "tokenExpiryTime", tokenExpiryTime.toString());
             } catch (JSONException e) {
@@ -249,5 +254,20 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
         setResult(RESULT_OK, intent);
         finish();
     }
+    public static boolean isConnected(Context context) {
+        boolean haveConnectedWifi = false;
+        boolean haveConnectedMobile = false;
 
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo[] netInfo = cm.getAllNetworkInfo();
+        for (NetworkInfo ni : netInfo) {
+            if (ni.getTypeName().equalsIgnoreCase("WIFI"))
+                if (ni.isConnected())
+                    haveConnectedWifi = true;
+            if (ni.getTypeName().equalsIgnoreCase("MOBILE"))
+                if (ni.isConnected())
+                    haveConnectedMobile = true;
+        }
+        return haveConnectedWifi || haveConnectedMobile;
+    }
 }

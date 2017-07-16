@@ -10,6 +10,7 @@ import android.util.Log;
 
 import com.mntechnique.oauth2authenticator.R;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import static android.accounts.AccountManager.KEY_BOOLEAN_RESULT;
@@ -67,9 +68,10 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
         String authToken = am.getUserData(account, "authtoken");
         String accessToken = am.getUserData(account, "accessToken");
         String refreshToken = am.getUserData(account, "refreshToken");
-        String frappeServer = am.getUserData(account, "frappeServer");
+        String serverURL = am.getUserData(account, "serverURL");
         String CLIENT_ID = am.getUserData(account, "clientId");
         String REDIRECT_URI = am.getUserData(account, "redirectURI");
+        String openIDEndpoint = am.getUserData(account, "openIDEndpoint");
         String tokenExpiryTime = am.getUserData(account, "tokenExpiryTime");
 
         Log.d("frappe", TAG + "> at isnull - " + accessToken);
@@ -101,10 +103,22 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
 
         // If we get an authToken - we return it
         if (!TextUtils.isEmpty(authToken)) {
-            Bundle result = new Bundle();
-            result = getBundle("valid",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
-            result.putString(AccountManager.KEY_AUTHTOKEN, authToken);
-            return result;
+            JSONObject bearerToken = new JSONObject();
+            JSONObject openIDProfile = new JSONObject();
+            String access_token;
+            try {
+                bearerToken = new JSONObject(authToken);
+                access_token = bearerToken.getString("access_token");
+                openIDProfile = sServerAuthenticate.getOpenIDProfile(access_token, serverURL, openIDEndpoint);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            if (!openIDProfile.isNull("email")){
+                Bundle result = new Bundle();
+                result = getBundle("valid",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
+                result.putString(AccountManager.KEY_AUTHTOKEN, authToken);
+                return result;
+            }
         }
         // If we get here, then we couldn't access the user's password - so we
         // need to re-prompt them for their credentials. We do that by creating
