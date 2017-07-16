@@ -25,6 +25,8 @@ import com.mntechnique.oauth2authenticator.BuildConfig;
 import com.mntechnique.oauth2authenticator.R;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.concurrent.ExecutionException;
 
 import static com.mntechnique.oauth2authenticator.auth.AccountGeneral.sServerAuthenticate;
@@ -47,6 +49,8 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
     public final static String PARAM_USER_PASS = "USER_PASS";
 
     public String authCode;
+
+    public String urlEncodedRedirectURI = "oauth%3A%2F%2Foauth2authenticator";
 
     private final int REQ_SIGNUP = 1;
 
@@ -85,6 +89,11 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
     public void initOAuth2() {
         final String accountType = getIntent().getStringExtra(ARG_ACCOUNT_TYPE);
         final WebView webView = (WebView) findViewById(R.id.webv);
+        try {
+            urlEncodedRedirectURI = URLEncoder.encode(getResources().getString(R.string.redirectURI), "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
         webView.getSettings().setJavaScriptEnabled(true);
         webView.setVisibility(View.VISIBLE);
         webView.clearCache(true);
@@ -171,7 +180,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                             }
                         }
                     }.execute();
-                }else if(url.contains("redirect_uri=oauth%3A%2F%2Ffoauth2authenticator") && authComplete != true) {
+                }else if(url.contains("redirect_uri=" + urlEncodedRedirectURI) && authComplete != true) {
                     Toast.makeText(getApplicationContext(), "Allow or Deny Access to Resources", Toast.LENGTH_LONG).show();
                 }else if(url.contains("error=access_denied")){
                     Log.i("", "ACCESS_DENIED_HERE");
@@ -183,7 +192,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
             @Override
             public void onReceivedError(WebView view, int errorCode, String description, String failingUrl){
                 super.onReceivedError(view, errorCode, description, failingUrl);
-                if (errorCode != -10) {
+                if (errorCode != -10 || errorCode != -6) {
                     Toast.makeText(getApplicationContext(), "Something went wrong", Toast.LENGTH_LONG).show();
                     Log.i("WEB_VIEW_TEST", "error code:" + errorCode);
                     finish();
