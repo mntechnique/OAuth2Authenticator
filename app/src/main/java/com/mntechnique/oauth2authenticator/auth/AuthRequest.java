@@ -5,16 +5,16 @@ import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.content.Context;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.github.scribejava.core.builder.ServiceBuilder;
 import com.github.scribejava.core.model.OAuth2AccessToken;
-import com.github.scribejava.core.model.OAuthAsyncRequestCallback;
 import com.github.scribejava.core.model.OAuthRequest;
 import com.github.scribejava.core.model.Response;
-import com.github.scribejava.core.model.Verb;
 import com.github.scribejava.core.oauth.OAuth20Service;
 
 import org.json.JSONException;
@@ -47,34 +47,50 @@ public class AuthRequest {
         accountManager.getAuthToken(account, AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS, true, new AccountManagerCallback<Bundle>() {
             @Override
             public void run(final AccountManagerFuture<Bundle> future) {
-                new Thread(new Runnable(){
+                Handler mHandler = new Handler(Looper.getMainLooper());
+                mHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        String authToken;
-                        try {
-                            Bundle bundle = future.getResult();
-                            authToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
-                            JSONObject bearerToken = new JSONObject(authToken);
-                            OAuth2AccessToken oAuth2AccessToken = new OAuth2AccessToken(bearerToken.getString("access_token"));
-                            oauth20Service.signRequest(oAuth2AccessToken, request);
-                            Response response = null;
-                            response = oauth20Service.execute(request);
-                            callback.onSuccessResponse(response.getBody());
-                            //accountManager.invalidateAuthToken(account.type, authToken);
-                        } catch (JSONException e) {
-                            Log.d("JSONerror", e.getMessage());
-                            callback.onErrorResponse(e.getMessage());
-                        } catch (IOException e) {
-                            Log.d("OAuth2Authenticator", e.getMessage());
-                            callback.onErrorResponse(e.getMessage());
-                        } catch (Exception e) {
-                            Log.d("OAuth2Authenticator", e.toString());
-                            Toast.makeText(mContext, "Something went wrong!", Toast.LENGTH_LONG).show();
-                            callback.onErrorResponse(e.toString());
-                            e.printStackTrace();
-                        }
+                        new AsyncTask<Void, Void, String>(){
+                            @Override
+                            protected String doInBackground(Void... params) {
+                                String authToken;
+                                String out = "";
+                                try {
+                                    Bundle bundle = future.getResult();
+                                    authToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
+                                    JSONObject bearerToken = new JSONObject(authToken);
+                                    OAuth2AccessToken oAuth2AccessToken = new OAuth2AccessToken(bearerToken.getString("access_token"));
+                                    oauth20Service.signRequest(oAuth2AccessToken, request);
+                                    Response response = null;
+                                    response = oauth20Service.execute(request);
+                                    return response.getBody();
+                                    //accountManager.invalidateAuthToken(account.type, authToken);
+                                } catch (JSONException e) {
+                                    Log.d("JSONerror", e.getMessage());
+                                    callback.onErrorResponse(e.getMessage());
+                                } catch (IOException e) {
+                                    Log.d("OAuth2Authenticator", e.getMessage());
+                                    callback.onErrorResponse(e.getMessage());
+                                } catch (Exception e) {
+                                    Log.d("OAuth2Authenticator", e.toString());
+                                    callback.onErrorResponse(e.toString());
+                                    e.printStackTrace();
+                                }
+                                return out;
+                            }
+                            @Override
+                            protected void onPostExecute(String result){
+                                callback.onSuccessResponse(result);
+                            }
+                        }.execute();
                     }
-                }).start();
+                });
+//                new Thread(new Runnable(){
+//                    @Override
+//                    public void run() {
+//                    }
+//                }).start();
             }
         },null);
     }
