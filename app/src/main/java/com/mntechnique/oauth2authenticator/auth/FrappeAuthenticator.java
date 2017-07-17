@@ -26,6 +26,7 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
 
     private String TAG = "Frappe Authenticator";
     private final Context mContext;
+    String authToken;
 
     public FrappeAuthenticator(Context context) {
         super(context);
@@ -65,7 +66,7 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
         // the server for an appropriate AuthToken.
         final AccountManager am = AccountManager.get(mContext);
 
-        String authToken = am.getUserData(account, "authtoken");
+        authToken = am.getUserData(account, "authtoken");
         String accessToken = am.getUserData(account, "accessToken");
         String refreshToken = am.getUserData(account, "refreshToken");
 
@@ -79,31 +80,33 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
         String oauth2Scope = am.getUserData(account, "oauth2Scope");
         String tokenExpiryTime = am.getUserData(account, "tokenExpiryTime");
 
-        Log.d("frappe", TAG + "> at isnull - " + accessToken);
-        Log.d("frappe", TAG + "> expiryTime - " + tokenExpiryTime);
+        Log.d("OAuth2Authenticator", TAG + "> at isnull - " + accessToken);
+        Log.d("OAuth2Authenticator", TAG + "> expiryTime - " + tokenExpiryTime);
 
         Long currentTime = System.currentTimeMillis()/1000;
         Long tokenExpiry = Long.parseLong(tokenExpiryTime);
 
+        //Initiate Scribe Java Auth Service
+        AccountGeneral accountGeneral = new AccountGeneral(
+                oauth2Scope, CLIENT_ID, clientSecret, serverURL,
+                REDIRECT_URI, authEndpoint, tokenEndpoint
+        );
+
+        Log.d("OAuth2Authenticator", accountGeneral.toString());
+
         // Lets give another try to authenticate the user
         if (TextUtils.isEmpty(accessToken) || currentTime > tokenExpiry) {
+            Log.d("OAuth2Authenticator", "return new or expired token");
+            Bundle result = new Bundle();
             try {
-                Log.d("frappe", TAG + "> re-authenticating with the refresh token");
-                Long tsLong = (System.currentTimeMillis()/1000)+ Long.parseLong(Resources.getSystem().getString(R.string.expiresIn));
-                String refreshedTokenExpiryTime = tsLong.toString();
-                JSONObject authMethod = new JSONObject();
-                authMethod.put("type", "refresh");
-                authMethod.put("refresh_token", refreshToken);
-                authToken = sServerAuthenticate.userSignIn(authMethod,CLIENT_ID,REDIRECT_URI);
-                JSONObject bearerToken = new JSONObject(authToken);
-                am.setAuthToken(account, AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS, authToken);
-                am.setUserData(account, "authtoken", authToken);
-                am.setUserData(account, "refreshToken", bearerToken.getString("refresh_token"));
-                am.setUserData(account, "accessToken", bearerToken.getString("access_token"));
-                am.setUserData(account, "tokenExpiryTime", refreshedTokenExpiryTime);
+                refreshBearerToken(am, account, refreshToken, CLIENT_ID, REDIRECT_URI);
+                result = getBundle("valid",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
             } catch (Exception e) {
+                result = getBundle("new_intent",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
                 e.printStackTrace();
             }
+            result.putString(AccountManager.KEY_AUTHTOKEN, authToken);
+            return result;
         }
 
         // If we get an authToken - we return it
@@ -114,19 +117,26 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
             try {
                 bearerToken = new JSONObject(authToken);
                 access_token = bearerToken.getString("access_token");
-                AccountGeneral accountGeneral = new AccountGeneral(
-                        oauth2Scope, CLIENT_ID, clientSecret, serverURL,
-                        REDIRECT_URI, authEndpoint, tokenEndpoint
-                );
                 openIDProfile = sServerAuthenticate.getOpenIDProfile(access_token, serverURL, openIDEndpoint);
-                if (!openIDProfile.getString("email").isEmpty()){
-                    Bundle result = new Bundle();
+                Bundle result = new Bundle();
+                Log.d("OAuth2Aauthenticator", "check openid");
+                if (openIDProfile.length() != 0 && openIDProfile.getString("email") == account.name){
+                    Log.d("OAuth2Aauthenticator", "OpenID correct");
                     result = getBundle("valid",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
-                    result.putString(AccountManager.KEY_AUTHTOKEN, authToken);
-                    return result;
+                } else {
+                    Log.d("OAuth2Aauthenticator", "OpenID missing");
+                    refreshBearerToken(am, account, refreshToken, CLIENT_ID, REDIRECT_URI);
+                    result = getBundle("valid",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
                 }
+                result.putString(AccountManager.KEY_AUTHTOKEN, authToken);
+                return result;
+
             } catch (JSONException e) {
                 e.printStackTrace();
+            } catch (Exception e){
+                Bundle result = getBundle("new_intent",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
+                e.printStackTrace();
+                return result;
             }
         }
         // If we get here, then we couldn't access the user's password - so we
@@ -185,5 +195,24 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
     @Override
     public Bundle updateCredentials(AccountAuthenticatorResponse response, Account account, String authTokenType, Bundle options) throws NetworkErrorException {
         return null;
+    }
+
+    public void refreshBearerToken (AccountManager am, Account account, String refreshToken,
+                                    String CLIENT_ID, String REDIRECT_URI) throws Exception {
+        Log.d("OAuth2Aauthenticator", "refreshing token");
+        JSONObject authMethod = new JSONObject();
+
+        Long tsLong = (System.currentTimeMillis()/1000)+ 3300;//Long.parseLong(Resources.getSystem().getString(R.string.expiresIn));
+        String refreshedTokenExpiryTime = tsLong.toString();
+
+        am.setUserData(account, "tokenExpiryTime", refreshedTokenExpiryTime);
+        authMethod.put("type", "refresh");
+        authMethod.put("refresh_token", refreshToken);
+        final String authToken = sServerAuthenticate.userSignIn(authMethod,CLIENT_ID,REDIRECT_URI);
+        am.setAuthToken(account, AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS, authToken);
+        JSONObject bearerToken = new JSONObject(authToken);
+        am.setUserData(account, "authtoken", authToken);
+        am.setUserData(account, "refreshToken", bearerToken.getString("refresh_token"));
+        am.setUserData(account, "accessToken", bearerToken.getString("access_token"));
     }
 }

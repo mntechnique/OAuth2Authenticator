@@ -42,9 +42,10 @@ public class FrappeServerAuthenticate implements ServerAuthenticate {
                 oAuth2AccessToken = AccountGeneral.oauth20Service.getAccessToken(code);
             }
         } catch (JSONException e) {
+            oAuth2AccessToken = null;
             e.printStackTrace();
         }
-        return oAuth2AccessToken.getAccessToken();
+        return oAuth2AccessToken.getRawResponse();
     }
 
     @Override
