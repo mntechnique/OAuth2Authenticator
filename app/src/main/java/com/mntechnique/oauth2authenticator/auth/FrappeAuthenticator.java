@@ -3,12 +3,9 @@ package com.mntechnique.oauth2authenticator.auth;
 import android.accounts.*;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
-
-import com.mntechnique.oauth2authenticator.R;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -78,6 +75,7 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
         String openIDEndpoint = am.getUserData(account, "openIDEndpoint");
         String clientSecret = am.getUserData(account, "clientSecret");
         String oauth2Scope = am.getUserData(account, "oauth2Scope");
+        String expiresIn = am.getUserData(account, "expiresIn");
         String tokenExpiryTime = am.getUserData(account, "tokenExpiryTime");
 
         Log.d("OAuth2Authenticator", TAG + "> at isnull - " + accessToken);
@@ -99,7 +97,7 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
             Log.d("OAuth2Authenticator", "return new or expired token");
             Bundle result = new Bundle();
             try {
-                refreshBearerToken(am, account, refreshToken, CLIENT_ID, REDIRECT_URI);
+                refreshBearerToken(am, account, refreshToken, CLIENT_ID, REDIRECT_URI, expiresIn);
                 result = getBundle("valid",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
             } catch (Exception e) {
                 result = getBundle("new_intent",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
@@ -125,7 +123,7 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
                     result = getBundle("valid",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
                 } else {
                     Log.d("OAuth2Aauthenticator", "OpenID missing");
-                    refreshBearerToken(am, account, refreshToken, CLIENT_ID, REDIRECT_URI);
+                    refreshBearerToken(am, account, refreshToken, CLIENT_ID, REDIRECT_URI, expiresIn);
                     result = getBundle("valid",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
                 }
                 result.putString(AccountManager.KEY_AUTHTOKEN, authToken);
@@ -198,11 +196,11 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
     }
 
     public void refreshBearerToken (AccountManager am, Account account, String refreshToken,
-                                    String CLIENT_ID, String REDIRECT_URI) throws Exception {
+                                    String CLIENT_ID, String REDIRECT_URI, String expiresIn) throws Exception {
         Log.d("OAuth2Aauthenticator", "refreshing token");
         JSONObject authMethod = new JSONObject();
 
-        Long tsLong = (System.currentTimeMillis()/1000)+ 3300;//Long.parseLong(Resources.getSystem().getString(R.string.expiresIn));
+        Long tsLong = (System.currentTimeMillis()/1000)+ Long.parseLong(expiresIn);
         String refreshedTokenExpiryTime = tsLong.toString();
 
         am.setUserData(account, "tokenExpiryTime", refreshedTokenExpiryTime);

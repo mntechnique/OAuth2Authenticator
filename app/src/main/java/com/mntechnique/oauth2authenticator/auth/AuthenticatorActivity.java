@@ -249,6 +249,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                 mAccountManager.setUserData(account, "authEndpoint", getResources().getString(R.string.authEndpoint));
                 mAccountManager.setUserData(account, "tokenEndpoint", getResources().getString(R.string.tokenEndpoint));
                 mAccountManager.setUserData(account, "openIDEndpoint", getResources().getString(R.string.openIDEndpoint));
+                mAccountManager.setUserData(account, "expiresIn", getResources().getString(R.string.expiresIn));
                 mAccountManager.setUserData(account, "tokenExpiryTime", tokenExpiryTime.toString());
             } catch (JSONException e) {
                 e.printStackTrace();
