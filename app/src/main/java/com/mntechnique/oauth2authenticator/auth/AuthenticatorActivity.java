@@ -3,6 +3,7 @@ package com.mntechnique.oauth2authenticator.auth;
 import android.accounts.Account;
 import android.accounts.AccountAuthenticatorActivity;
 import android.accounts.AccountManager;
+import android.accounts.AccountsException;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -16,8 +17,6 @@ import android.util.Log;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
-import android.webkit.WebResourceError;
-import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
@@ -64,6 +63,8 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
     private AccountManager mAccountManager;
     private String mAuthTokenType;
 
+    Integer allowMultipleAccounts;
+
     /**
      * Called when the activity is first created.
      */
@@ -72,13 +73,46 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_authenticator);
         mAccountManager = AccountManager.get(getBaseContext());
-
+        Log.d("IntentExtras", String.valueOf(getIntent().getExtras()));
         mAuthTokenType = getIntent().getStringExtra(ARG_AUTH_TYPE);
         if (mAuthTokenType == null)
             mAuthTokenType = AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS;
+        Intent intent = getIntent();
+        Log.d("Intent:ACCOUNT_NAME", intent.getExtras().toString());
+        Account[] accounts = mAccountManager.getAccountsByType(getIntent().getStringExtra(ARG_ACCOUNT_TYPE));
+        allowMultipleAccounts = Integer.parseInt(getResources().getString(R.string.allowMultipleAccounts));
+        Boolean signInAgain = true;
+        if (intent.hasExtra(ARG_ACCOUNT_NAME)){
+            for(Account account : accounts){
+                if (account.name.equals(intent.getStringExtra(ARG_ACCOUNT_NAME))){
+                    initOAuth2();
+                    signInAgain = false;
+                }
+            }
+        }
 
-        // Init OAuth2 flow
-        initOAuth2();
+        if (allowMultipleAccounts == 0 && accountExists() && signInAgain) {
+            final ProgressBar progressBar = (ProgressBar) findViewById(R.id.progressBar);
+            progressBar.setVisibility(View.GONE);
+
+            final WebView webView = (WebView) findViewById(R.id.webv);
+            webView.setVisibility(View.GONE);
+
+            singleAccountSnackbar();
+        } else {
+            // Init OAuth2 flow
+            initOAuth2();
+        }
+    }
+
+    private void singleAccountSnackbar() {
+        Snackbar.make(findViewById(android.R.id.content), "You can only add one account", Snackbar.LENGTH_INDEFINITE)
+                .setAction("Close", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        finish();
+                    }
+                }).show();
     }
 
     @Override
@@ -167,10 +201,19 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                                     JSONObject openIDProfile = sServerAuthenticate.getOpenIDProfile(bearerToken.getString("access_token"),
                                             getResources().getString(R.string.serverURL),
                                             getResources().getString(R.string.openIDEndpoint));
+
+                                    if (openIDProfile.has("email") && getIntent().hasExtra(ARG_ACCOUNT_NAME)){
+                                        if(openIDProfile.getString("email") != getIntent().getStringExtra(ARG_ACCOUNT_NAME)
+                                            && accountExists()){
+                                            throw new AccountsException("Not allowed to add new account");
+                                        }
+                                    }
+
                                     data.putString(AccountManager.KEY_ACCOUNT_NAME, openIDProfile.get("email").toString());
                                     data.putString(AccountManager.KEY_ACCOUNT_TYPE, accountType);
                                     data.putString(AccountManager.KEY_AUTHTOKEN, authtoken);
                                     data.putString(PARAM_USER_PASS, getResources().getString(R.string.clientSecret));
+
                                 } catch (Exception e) {
                                     data.putString(KEY_ERROR_MESSAGE, e.getMessage());
                                 }
@@ -279,5 +322,13 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                     haveConnectedMobile = true;
         }
         return haveConnectedWifi || haveConnectedMobile;
+    }
+
+    public boolean accountExists() {
+        Account[] accounts = mAccountManager.getAccountsByType(getIntent().getStringExtra(ARG_ACCOUNT_TYPE));
+        if (accounts.length > 0) {
+            return true;
+        }
+        return false;
     }
 }
