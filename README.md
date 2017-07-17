@@ -45,19 +45,67 @@ final AuthRequest authRequest = new AuthRequest(
 
 ```
 
-Set Callback and request
+Set Callbacks and request
 
 ```
-AuthReqCallback callback = new AuthReqCallback() {
+// callback to handle Request Response
+final AuthReqCallback responseCallback = new AuthReqCallback() {
     @Override
     public void onSuccessResponse(String s) {
-        Log.d("CallbackSuccess", s);
-        //Can handle UI thread here
+        try {
+            JSONObject openID = new JSONObject(s);
+            ProgressBar progressBar = (ProgressBar) findViewById(R.id.progressBar);
+            TextView tvSub = (TextView) findViewById(R.id.tvSub);
+            TextView tvName = (TextView) findViewById(R.id.tvName);
+            TextView tvGivenName = (TextView) findViewById(R.id.tvGivenName);
+            TextView tvFamName = (TextView) findViewById(R.id.tvFamName);
+            TextView tvEmail = (TextView) findViewById(R.id.tvEmail);
+            LinearLayout llOpenID = (LinearLayout) findViewById(R.id.llOpenID);
+
+            tvSub.setText(openID.getString("sub"));
+            tvName.setText(openID.getString("name"));
+            tvGivenName.setText(openID.getString("given_name"));
+            tvFamName.setText(openID.getString("family_name"));
+            tvEmail.setText(openID.getString("email"));
+
+            progressBar.setVisibility(View.GONE);
+            llOpenID.setVisibility(View.VISIBLE);
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
-    public void onErrorResponse(String e) {
-        Log.d("CallbackError", e);
+    public void onErrorResponse(String s) {
+
+    }
+};
+
+// callback to handle Bearer Token
+AuthReqCallback accessTokenCallback = new AuthReqCallback() {
+    @Override
+    public void onSuccessResponse(String s) {
+        Log.d("CallbackSuccess", s);
+        JSONObject bearerToken = new JSONObject();
+        try {
+            bearerToken = new JSONObject(s);
+        } catch (JSONException e) {
+            bearerToken = new JSONObject();
+        }
+
+        if(bearerToken.length() > 0){
+            try {
+                authRequest.makeRequest(bearerToken.getString("access_token"), request, responseCallback);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void onErrorResponse(String s) {
+        Log.d("CallbackError", s);
     }
 };
 
@@ -70,9 +118,54 @@ Get Accounts and make authenticated request with an account
 Account[] accounts = mAccountManager.getAccountsByType(BuildConfig.APPLICATION_ID);
 
 if (accounts.length == 1) {
-    authRequest.makeAuthenticatedRequest(accounts[0],request, callback);
+    getToken(accounts[0], accessTokenCallback);
 } else if (Build.VERSION.SDK_INT >= 23) {
     Intent intent = AccountManager.newChooseAccountIntent(null, null, new String[]{BuildConfig.APPLICATION_ID}, null, null  , null, null);
     startActivityForResult(intent, 1);
+}
+```
+
+getAuthToken with failure notification in notification bar 
+
+
+```
+void getAuthToken(final Account account, final AuthReqCallback callback) {
+    mAccountManager.getAuthToken(account, AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,
+            true, new AccountManagerCallback<Bundle>() {
+                @Override
+                public void run(AccountManagerFuture<Bundle> future) {
+                    try {
+                        Bundle bundle = future.getResult();
+                        String authToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
+                        callback.onSuccessResponse(authToken);
+                        Log.d("bearerToken", authToken);
+                        mAccountManager.invalidateAuthToken(account.type, authToken);
+                    } catch (Exception e) {
+                        Log.d("error", e.toString());
+                    }
+                }
+            }, null);
+}
+```
+
+getAuthToken with login activity intent 
+
+```
+void getAuthToken(final Account account, final AuthReqCallback callback) {
+    mAccountManager.getAuthToken(account, AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,
+            null, this, new AccountManagerCallback<Bundle>() {
+                @Override
+                public void run(AccountManagerFuture<Bundle> future) {
+                    try {
+                        Bundle bundle = future.getResult();
+                        String authToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
+                        callback.onSuccessResponse(authToken);
+                        Log.d("bearerToken", authToken);
+                        mAccountManager.invalidateAuthToken(account.type, authToken);
+                    } catch (Exception e) {
+                        Log.d("error", e.toString());
+                    }
+                }
+            }, null);
 }
 ```
