@@ -204,7 +204,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 
                                     if (openIDProfile.has("email") && getIntent().hasExtra(ARG_ACCOUNT_NAME)){
                                         if(openIDProfile.getString("email") != getIntent().getStringExtra(ARG_ACCOUNT_NAME)
-                                            && accountExists()){
+                                            && allowMultipleAccounts == 0 && accountExists()){
                                             throw new AccountsException("Not allowed to add new account");
                                         }
                                     }
