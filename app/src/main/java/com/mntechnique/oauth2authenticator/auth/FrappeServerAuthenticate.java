@@ -54,26 +54,21 @@ public class FrappeServerAuthenticate implements ServerAuthenticate {
         final OAuthRequest request = new OAuthRequest(Verb.GET, serverURL + openIDEndpoint);
         AccountGeneral.oauth20Service.signRequest(oAuth2AccessToken, request);
         Response response = null;
+        JSONObject openIDProfile = new JSONObject();
         try {
             response = AccountGeneral.oauth20Service.execute(request);
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-        try {
-            Log.d("getOIDEndp", response.getBody());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        JSONObject openIDProfile = null;
-        try {
             openIDProfile = new JSONObject(response.getBody());
         } catch (JSONException e) {
-            e.printStackTrace();
             openIDProfile = new JSONObject();
+            Log.d("OAuth2Authenticator", e.getMessage());
         } catch (IOException e) {
-            e.printStackTrace();
             openIDProfile = new JSONObject();
+            Log.d("OAuth2Authenticator", e.getMessage());
+        } catch (Exception e){
+            openIDProfile = new JSONObject();
+            Log.d("OAuth2Authenticator", e.getMessage());
         }
+        Log.d("OIDPJSON", openIDProfile.toString());
         return openIDProfile;
     }
 }

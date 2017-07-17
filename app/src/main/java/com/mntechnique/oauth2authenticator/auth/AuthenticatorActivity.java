@@ -136,7 +136,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                         progressBar.setVisibility(View.VISIBLE);
                         Uri uri = Uri.parse(url);
                         authCode = uri.getQueryParameter("code");
-                        Log.i("", "CODE : " + authCode);
+                        Log.d("CODE : ", authCode);
                         new AsyncTask<String, Void, Intent>() {
 
                             @Override
@@ -191,7 +191,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                             }
                         }.execute();
                     } else if (url.contains("error=access_denied")){
-                        Log.i("", "ACCESS_DENIED_HERE");
+                        Log.d(TAG, "ACCESS_DENIED_HERE");
                         resultIntent.putExtra("code", authCode);
                         authComplete = true;
                     }

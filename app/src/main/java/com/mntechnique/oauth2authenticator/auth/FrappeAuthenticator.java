@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import static android.accounts.AccountManager.KEY_BOOLEAN_RESULT;
@@ -21,20 +20,18 @@ import static com.mntechnique.oauth2authenticator.auth.AccountGeneral.*;
  */
 public class FrappeAuthenticator extends AbstractAccountAuthenticator {
 
-    private String TAG = "Frappe Authenticator";
+    private String TAG = "OAuth2Authenticator";
     private final Context mContext;
     String authToken;
 
     public FrappeAuthenticator(Context context) {
         super(context);
-
-        // I hate you! Google - set mContext as protected!
         this.mContext = context;
     }
 
     @Override
     public Bundle addAccount(AccountAuthenticatorResponse response, String accountType, String authTokenType, String[] requiredFeatures, Bundle options) throws NetworkErrorException {
-        Log.d("frappe", TAG + "> addAccount");
+        Log.d(TAG, "> addAccount");
 
         final Intent intent = new Intent(mContext, AuthenticatorActivity.class);
         intent.putExtra(AuthenticatorActivity.ARG_ACCOUNT_TYPE, accountType);
@@ -49,7 +46,7 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
 
     @Override
     public Bundle getAuthToken(AccountAuthenticatorResponse response, Account account, String authTokenType, Bundle options) throws NetworkErrorException {
-        Log.d("frappe", TAG + "> getAuthToken");
+        Log.d(TAG, "> getAuthToken");
 
         // If the caller requested an authToken type we don't support, then
         // return an error
@@ -81,67 +78,48 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
         Log.d("OAuth2Authenticator", TAG + "> at isnull - " + accessToken);
         Log.d("OAuth2Authenticator", TAG + "> expiryTime - " + tokenExpiryTime);
 
-        Long currentTime = System.currentTimeMillis()/1000;
-        Long tokenExpiry = Long.parseLong(tokenExpiryTime);
-
         //Initiate Scribe Java Auth Service
         AccountGeneral accountGeneral = new AccountGeneral(
                 oauth2Scope, CLIENT_ID, clientSecret, serverURL,
                 REDIRECT_URI, authEndpoint, tokenEndpoint
         );
 
+        JSONObject openIDProfile = sServerAuthenticate.getOpenIDProfile(accessToken, serverURL, openIDEndpoint);
         Log.d("OAuth2Authenticator", accountGeneral.toString());
 
         // Lets give another try to authenticate the user
-        if (TextUtils.isEmpty(accessToken) || currentTime > tokenExpiry) {
-            Log.d("OAuth2Authenticator", "return new or expired token");
-            Bundle result = new Bundle();
+        if (TextUtils.isEmpty(accessToken) || openIDProfile.length() == 0) {
             try {
-                refreshBearerToken(am, account, refreshToken, CLIENT_ID, REDIRECT_URI, expiresIn);
-                result = getBundle("valid",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
+                Log.d(TAG, "> re-authenticating with the refresh token");
+                JSONObject authMethod = new JSONObject();
+                authMethod.put("type", "refresh");
+                authMethod.put("refresh_token", refreshToken);
+                authToken = sServerAuthenticate.userSignIn(authMethod, CLIENT_ID, REDIRECT_URI);
+                JSONObject bearerToken = new JSONObject(authToken);
+                am.setAuthToken(account, AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS, authToken);
+                am.setUserData(account, "authtoken", authToken);
+                am.setUserData(account, "refreshToken", bearerToken.getString("refresh_token"));
+                am.setUserData(account, "accessToken", bearerToken.getString("access_token"));
             } catch (Exception e) {
-                result = getBundle("new_intent",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
-                e.printStackTrace();
-            }
-            result.putString(AccountManager.KEY_AUTHTOKEN, authToken);
-            return result;
-        }
+                Log.d(TAG, e.getMessage());
 
+                //Clearing Auth Token due to error while refreshing
+                authToken = null;
+            }
+        }
         // If we get an authToken - we return it
         if (!TextUtils.isEmpty(authToken)) {
-            JSONObject bearerToken = new JSONObject();
-            JSONObject openIDProfile = new JSONObject();
-            String access_token;
-            try {
-                bearerToken = new JSONObject(authToken);
-                access_token = bearerToken.getString("access_token");
-                openIDProfile = sServerAuthenticate.getOpenIDProfile(access_token, serverURL, openIDEndpoint);
-                Bundle result = new Bundle();
-                Log.d("OAuth2Aauthenticator", "check openid");
-                if (openIDProfile.length() != 0 && openIDProfile.getString("email") == account.name){
-                    Log.d("OAuth2Aauthenticator", "OpenID correct");
-                    result = getBundle("valid",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
-                } else {
-                    Log.d("OAuth2Aauthenticator", "OpenID missing");
-                    refreshBearerToken(am, account, refreshToken, CLIENT_ID, REDIRECT_URI, expiresIn);
-                    result = getBundle("valid",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
-                }
-                result.putString(AccountManager.KEY_AUTHTOKEN, authToken);
-                return result;
-
-            } catch (JSONException e) {
-                e.printStackTrace();
-            } catch (Exception e){
-                Bundle result = getBundle("new_intent",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
-                e.printStackTrace();
-                return result;
-            }
+            Bundle result = new Bundle();
+            result = getBundle("valid",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
+            result.putString(AccountManager.KEY_AUTHTOKEN, authToken);
+            return result;
         }
         // If we get here, then we couldn't access the user's password - so we
         // need to re-prompt them for their credentials. We do that by creating
         // an intent to display our AuthenticatorActivity.
         Bundle result = getBundle("new_intent",AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS,account,response);
         return result;
+
     }
 
     public Bundle getBundle(String bundleType, String authTokenType, Account account, AccountAuthenticatorResponse response){
@@ -193,24 +171,5 @@ public class FrappeAuthenticator extends AbstractAccountAuthenticator {
     @Override
     public Bundle updateCredentials(AccountAuthenticatorResponse response, Account account, String authTokenType, Bundle options) throws NetworkErrorException {
         return null;
-    }
-
-    public void refreshBearerToken (AccountManager am, Account account, String refreshToken,
-                                    String CLIENT_ID, String REDIRECT_URI, String expiresIn) throws Exception {
-        Log.d("OAuth2Aauthenticator", "refreshing token");
-        JSONObject authMethod = new JSONObject();
-
-        Long tsLong = (System.currentTimeMillis()/1000)+ Long.parseLong(expiresIn);
-        String refreshedTokenExpiryTime = tsLong.toString();
-
-        am.setUserData(account, "tokenExpiryTime", refreshedTokenExpiryTime);
-        authMethod.put("type", "refresh");
-        authMethod.put("refresh_token", refreshToken);
-        final String authToken = sServerAuthenticate.userSignIn(authMethod,CLIENT_ID,REDIRECT_URI);
-        am.setAuthToken(account, AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS, authToken);
-        JSONObject bearerToken = new JSONObject(authToken);
-        am.setUserData(account, "authtoken", authToken);
-        am.setUserData(account, "refreshToken", bearerToken.getString("refresh_token"));
-        am.setUserData(account, "accessToken", bearerToken.getString("access_token"));
     }
 }
