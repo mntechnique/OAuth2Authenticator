@@ -19,7 +19,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity android:name=".auth.AuthenticatorActivity"
-            android:exported="true" ></activity>
+            android:exported="true" android:screenOrientation="portrait"></activity>
 
         <service android:name=".auth.FrappeAuthenticatorService">
             <intent-filter>
