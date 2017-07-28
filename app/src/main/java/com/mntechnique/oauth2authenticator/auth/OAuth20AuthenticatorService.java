@@ -10,11 +10,11 @@ import android.os.IBinder;
  * Date: 19/03/13
  * Time: 19:10
  */
-public class FrappeAuthenticatorService extends Service {
+public class OAuth20AuthenticatorService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
 
-        FrappeAuthenticator authenticator = new FrappeAuthenticator(this);
+        OAuth20Authenticator authenticator = new OAuth20Authenticator(this);
         return authenticator.getIBinder();
     }
 }

@@ -12,7 +12,7 @@ public class AccountGeneral {
     public static String AUTHTOKEN_TYPE_READ_ONLY_LABEL = "Read only access to an account";
     public static String AUTHTOKEN_TYPE_FULL_ACCESS = "Full access";
     public static String AUTHTOKEN_TYPE_FULL_ACCESS_LABEL = "Full access to an account";
-    public static final ServerAuthenticate sServerAuthenticate = new FrappeServerAuthenticate();
+    public static final ServerAuthenticate sServerAuthenticate = new OAuth20ServerAuthenticate();
 
     public static OAuth20Service oauth20Service = null;
 
@@ -22,6 +22,6 @@ public class AccountGeneral {
                 .apiSecret(clientSecret)
                 .scope(oauth2Scope)
                 .callback(redirectURI)
-                .build(OAuth2API.instance(serverURL, authEndpoint, tokenEndpoint));
+                .build(OAuth20API.instance(serverURL, authEndpoint, tokenEndpoint));
     }
 }

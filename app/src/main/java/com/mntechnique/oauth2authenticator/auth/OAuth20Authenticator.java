@@ -18,13 +18,13 @@ import static com.mntechnique.oauth2authenticator.auth.AccountGeneral.*;
  * Date: 19/03/13
  * Time: 18:58
  */
-public class FrappeAuthenticator extends AbstractAccountAuthenticator {
+public class OAuth20Authenticator extends AbstractAccountAuthenticator {
 
     private String TAG = "OAuth2Authenticator";
     private final Context mContext;
     String authToken;
 
-    public FrappeAuthenticator(Context context) {
+    public OAuth20Authenticator(Context context) {
         super(context);
         this.mContext = context;
     }

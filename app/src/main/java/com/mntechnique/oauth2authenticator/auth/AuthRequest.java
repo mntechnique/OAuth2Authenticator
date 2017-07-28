@@ -31,7 +31,7 @@ public class AuthRequest {
                 .apiSecret(clientSecret)
                 .scope(oauth2Scope)
                 .callback(redirectURI)
-                .build(OAuth2API.instance(serverURL, authEndpoint, tokenEndpoint));
+                .build(OAuth20API.instance(serverURL, authEndpoint, tokenEndpoint));
     }
 
     public void makeRequest(String accessToken, final OAuthRequest request, final AuthReqCallback callback){
