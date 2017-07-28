@@ -29,14 +29,16 @@ public class AddAccountSnackbar extends AppCompatActivity {
     }
 
     public void showAddAccountSnackBar(){
+        final String packageName = getResources().getString(R.string.package_name);
         AccountManager mAccountManager = AccountManager.get(this);
-        Account[] accounts = mAccountManager.getAccountsByType(getResources().getString(R.string.package_name));
+        Account[] accounts = mAccountManager.getAccountsByType(packageName);
         if (accounts.length == 0){
             Snackbar.make(findViewById(android.R.id.content), R.string.please_add_account, Snackbar.LENGTH_INDEFINITE)
                     .setAction(android.R.string.ok, new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             Intent intent = new Intent(AddAccountSnackbar.this, AuthenticatorActivity.class);
+                            intent.putExtra(AuthenticatorActivity.ARG_ACCOUNT_TYPE, packageName);
                             startActivity(intent);
                         }
                     }).show();
