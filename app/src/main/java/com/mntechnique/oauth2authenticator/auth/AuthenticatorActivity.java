@@ -308,6 +308,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
         setResult(RESULT_OK, intent);
         finish();
     }
+
     public static boolean isConnected(Context context) {
         boolean haveConnectedWifi = false;
         boolean haveConnectedMobile = false;

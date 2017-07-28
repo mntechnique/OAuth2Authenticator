@@ -14,13 +14,13 @@ import java.io.IOException;
 import java.util.HashMap;
 
 /**
- * Handles the comminication with OAuth 2 Provider
+ * Handles the communication with OAuth 2 Provider
  *
  * User: revant
  * Date: 3/27/13
  * Time: 3:30 AM
  */
-public class FrappeServerAuthenticate implements ServerAuthenticate {
+public class OAuth20ServerAuthenticate implements ServerAuthenticate {
 
     @Override
     public String userSignIn(final JSONObject authCode, final String CLIENT_ID, final String REDIRECT_URI) throws Exception {
