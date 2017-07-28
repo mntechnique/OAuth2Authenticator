@@ -12,4 +12,5 @@
     <string name="package_name">${packageName}</string>
     <string name="expiresIn">3300</string>
     <string name="allowMultipleAccounts">1</string>
+    <string name="please_add_account">Please add account</string>
 </resources>

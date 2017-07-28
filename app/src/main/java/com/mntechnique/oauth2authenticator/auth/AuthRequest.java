@@ -12,6 +12,8 @@ import com.github.scribejava.core.model.OAuthRequest;
 import com.github.scribejava.core.model.Response;
 import com.github.scribejava.core.oauth.OAuth20Service;
 
+import com.mntechnique.oauth2authenticator.auth.AuthReqCallback;
+
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
