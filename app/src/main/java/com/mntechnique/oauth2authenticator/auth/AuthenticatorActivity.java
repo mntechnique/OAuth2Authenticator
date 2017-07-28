@@ -78,6 +78,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
         if (mAuthTokenType == null)
             mAuthTokenType = AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS;
         Intent intent = getIntent();
+        Log.d("Intent:ACCOUNT_NAME", intent.getExtras().toString());
         Account[] accounts = mAccountManager.getAccountsByType(getIntent().getStringExtra(ARG_ACCOUNT_TYPE));
         allowMultipleAccounts = Integer.parseInt(getResources().getString(R.string.allowMultipleAccounts));
         Boolean signInAgain = true;
