@@ -33,7 +33,7 @@ public class RetrieveAuthTokenTask extends AsyncTask<String, Void, Void> {
         accounts = am.getAccountsByType(context.getResources().getString(R.string.package_name));
         if (accounts.length == 1) {
             final Account account = accounts[0];
-            am.getAuthToken(account, "Full access", null, true, new AccountManagerCallback<Bundle>() {
+            am.getAuthToken(account, AccountGeneral.AUTHTOKEN_TYPE_FULL_ACCESS, null, true, new AccountManagerCallback<Bundle>() {
                 @Override
                 public void run(AccountManagerFuture<Bundle> future) {
                     try {
